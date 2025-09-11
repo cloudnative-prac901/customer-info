@@ -5,5 +5,5 @@ Resources:
       Properties:
         TaskDefinition: <TASK_DEFINITION>   # CodeDeploy が登録したTaskDef ARN を差込
         LoadBalancerInfo:
-          ContainerName: “app"             # ECSサービスのコンテナ名と一致させる
-          ContainerPort: 80                    # ECSサービスのコンテナポートと一致させる
+          ContainerName: "app"              # ECSサービスのコンテナ名と一致させる
+          ContainerPort: 80                 # ECSサービスのコンテナポートと一致させる
