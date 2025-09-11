@@ -1,0 +1,34 @@
+{
+  "family": "customer-info-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "${EXEC_ROLE_ARN}",
+  "taskRoleArn":      "${TASK_ROLE_ARN}",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "IMAGE1_NAME",
+      "essential": true,
+      "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/customer-info",
+          "awslogs-region": "${REGION}",
+          "awslogs-stream-prefix": "customer-info"
+        }
+      },
+      "healthCheck": {
+        "command": ["CMD-SHELL","curl -f http://localhost:80/healthcheck || exit 1"],
+        "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 15
+      },
+      "secrets": [
+        { "name": "DB_USER", "valueFrom": "${DB_USER_SECRET_ARN}" },
+        { "name": "DB_PASS", "valueFrom": "${DB_PASS_SECRET_ARN}" }
+      ]
+    }
+  ],
+  "runtimePlatform": { "operatingSystemFamily": "LINUX", "cpuArchitecture": "X86_64" }
+}
