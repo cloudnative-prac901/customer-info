@@ -25,8 +25,8 @@
         "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 15
       },
       "secrets": [
-        { "name": "DB_USER", "valueFrom": "${DB_USER_SECRET_ARN}" },
-        { "name": "DB_PASS", "valueFrom": "${DB_PASS_SECRET_ARN}" }
+        { "name": "DB_USER", "valueFrom": "${DB_SECRET_ARN}:username::" },
+        { "name": "DB_PASS", "valueFrom": "${DB_SECRET_ARN}:password::" }
       ]
     }
   ],
