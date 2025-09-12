@@ -59,10 +59,20 @@ phases:
 
       # taskdef.tmpl.json → taskdef.json（envsubst でプレースホルダ埋め込み）
       - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION
-      - export DB_USER_SECRET_ARN="$APP_SECRET_ARN" DB_PASS_SECRET_ARN="$APP_SECRET_ARN"
+      - export DB_SECRET_ARN="${APP_SECRET_ARN}"
       - command -v envsubst >/dev/null 2>&1 || { echo "installing envsubst"; yum -y install gettext >/dev/null; }
+
       - envsubst < "${DEPLOY_DIR}/taskdef.tmpl.json" > "${DEPLOY_DIR}/taskdef.json"
 
+      # DB未導入（CFn Outputs が None/空）の場合は secrets を削除して登録
+      - command -v jq >/dev/null 2>&1 || { echo "installing jq"; yum -y install jq >/dev/null; }
+      - if [ -z "${DB_SECRET_ARN}" ] || [ "${DB_SECRET_ARN}" = "None" ]; then
+        echo "[post_build] DB_SECRET_ARN is empty => remove secrets from taskdef";
+        jq '(.containerDefinitions[0]) |= del(.secrets)' "${DEPLOY_DIR}/taskdef.wip.json" > "${DEPLOY_DIR}/taskdef.json";
+      else
+        mv "${DEPLOY_DIR}/taskdef.wip.json" "${DEPLOY_DIR}/taskdef.json";
+      fi
+      
       - echo "[done] artifacts in ${DEPLOY_DIR}"
 
 artifacts:
