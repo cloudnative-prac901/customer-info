@@ -29,7 +29,7 @@ phases:
       # イメージタグ生成（main 固定ポリシー）
       - TS=$(date +%Y%m%d%H%M%S)
       - IMAGE_TAG="main-${TS}-b${CODEBUILD_BUILD_NUMBER:-0}"
-      - : "${ECR_REPO:?ECR_REPO is empty}"
+      - test -n "${ECR_REPO}" || { echo "ECR_REPO is empty"; exit 1; }
       - IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
       - echo "[pre_build] IMAGE_URI=${IMAGE_URI}"
 
