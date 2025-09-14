@@ -18,8 +18,7 @@ phases:
       - echo "[pre_build] ACCOUNT_ID=${ACCOUNT_ID} REGION=${REGION}"
 
       # ECR login
-      - aws ecr get-login-password --region "$REGION" \
-        | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
+      - aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
 
       # CloudFormation Outputs からロール/Secret ARN を解決（IamStack/RdsStack で Outputs 済み前提）
       - EXEC_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "$IAM_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ECSTaskExecutionRoleArn'].OutputValue" --output text)
@@ -55,8 +54,9 @@ phases:
       - docker push "${IMAGE_URI}"
 
       # CodeDeploy(ECS Blue/Green) 用の imageDetail.json（DEPLOY_DIR に出力）
-      - printf '{"ImageURI":"%s"}\n' "${IMAGE_URI}" > "${DEPLOY_DIR}/imageDetail.json"
-
+      - printf '[{"name":"IMAGE1_NAME","imageUri":"%s"}]\n' "${IMAGE_URI}" > imageDetail.json
+      - echo "imageDetail.json:" && cat imageDetail.json
+      
       # taskdef.tmpl.json → taskdef.json（envsubst でプレースホルダ埋め込み）
       - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION
       - export DB_SECRET_ARN="${APP_SECRET_ARN}"
