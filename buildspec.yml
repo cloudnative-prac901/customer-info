@@ -1,5 +1,4 @@
 version: 0.2
-
 env:
   variables:
     ECR_REPO: "customer-info/app"           # ECR リポジトリ名
@@ -7,7 +6,6 @@ env:
     RDS_STACK_NAME: "RdsStack"              # RdsStack の実スタック名
     DEPLOY_DIR: "deploy/ecs"                # リポ直下の /deploy/ecs に変更
   git-credential-helper: no
-
 phases:
   # pre_build（ECRログイン、タグ生成などを実施）
   pre_build:
@@ -16,26 +14,21 @@ phases:
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
       - REGION="${AWS_DEFAULT_REGION:-ap-northeast-2}"
       - echo "[pre_build] ACCOUNT_ID=${ACCOUNT_ID} REGION=${REGION}"
-
       # ECR login
       - aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
-
       # CloudFormation Outputs からロール/Secret ARN を解決（IamStack/RdsStack で Outputs 済み前提）
       - EXEC_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "$IAM_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ECSTaskExecutionRoleArn'].OutputValue" --output text)
       - TASK_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "$IAM_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AppTaskRoleArn'].OutputValue" --output text)
       - APP_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$RDS_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AppSecretArn'].OutputValue" --output text)
-
       # イメージタグ生成（main 固定ポリシー）
       - TS=$(date +%Y%m%d%H%M%S)
       - IMAGE_TAG="main-${TS}-b${CODEBUILD_BUILD_NUMBER:-0}"
       - test -n "${ECR_REPO}" || { echo "ECR_REPO is empty"; exit 1; }
       - IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
       - echo "[pre_build] IMAGE_URI=${IMAGE_URI}"
-
       # 配置ファイルの存在チェック
       - test -f "${DEPLOY_DIR}/appspec.yaml" || { echo "not found: ${DEPLOY_DIR}/appspec.yaml"; exit 1; }
       - test -f "${DEPLOY_DIR}/taskdef.tmpl.json" || { echo "not found: ${DEPLOY_DIR}/taskdef.tmpl.json"; exit 1; }
-
   # build（docker buildなど）
   build:
     commands:
@@ -45,35 +38,28 @@ phases:
       - test -f "${DF}" || { echo "Dockerfile not found: ${DF}"; exit 1; }
       - echo "[build] docker build ${DF} -> ${IMAGE_URI}"
       - docker build --pull -f "${DF}" -t "${IMAGE_URI}" "${CTX}"
-
   # post_build（ECRプッシュ、imageDetail.jsonの出力）
   post_build:
     commands:
       - set -euo pipefail
       - echo "[post_build] push ${IMAGE_URI}"
       - docker push "${IMAGE_URI}"
-
       # CodeDeploy(ECS Blue/Green) 用の imageDetail.json（DEPLOY_DIR に出力）
       - printf '[{"name":"IMAGE1_NAME","imageUri":"%s"}]\n' "${IMAGE_URI}" > imageDetail.json
       - echo "imageDetail.json:" && cat imageDetail.json
-      
       # taskdef.tmpl.json → taskdef.json（envsubst でプレースホルダ埋め込み）
       - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION
       - export DB_SECRET_ARN="${APP_SECRET_ARN}"
       - command -v envsubst >/dev/null 2>&1 || { echo "installing envsubst"; yum -y install gettext >/dev/null; }
-
       - envsubst < "${DEPLOY_DIR}/taskdef.tmpl.json" > "${DEPLOY_DIR}/taskdef.json"
-
       # DB未導入（CFn Outputs が None/空）の場合は secrets を削除して登録
       - command -v jq >/dev/null 2>&1 || { echo "installing jq"; yum -y install jq >/dev/null; }
       - |
         if [ -z "${DB_SECRET_ARN}" ] || [ "${DB_SECRET_ARN}" = "None" ]; then
           echo "[post_build] DB_SECRET_ARN is empty => remove secrets from taskdef"
-          jq '(.containerDefinitions[0]) |= del(.secrets)' "${DEPLOY_DIR}/taskdef.json" > "${DEPLOY_DIR}/taskdef.tmp" \
-            && mv "${DEPLOY_DIR}/taskdef.tmp" "${DEPLOY_DIR}/taskdef.json"
-        fi        
+          jq '(.containerDefinitions[0]) |= del(.secrets)' "${DEPLOY_DIR}/taskdef.json" > "${DEPLOY_DIR}/taskdef.tmp" && mv "${DEPLOY_DIR}/taskdef.tmp" "${DEPLOY_DIR}/taskdef.json"
+        fi
       - echo "[done] artifacts in ${DEPLOY_DIR}"
-
 artifacts:
   files:
     - deploy/ecs/appspec.yaml
