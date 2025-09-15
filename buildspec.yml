@@ -27,7 +27,7 @@ phases:
       - IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
       - echo "[pre_build] IMAGE_URI=${IMAGE_URI}"
       # 配置ファイルの存在チェック
-      - test -f "${DEPLOY_DIR}/appspec.yaml" || { echo "not found: ${DEPLOY_DIR}/appspec.yaml"; exit 1; }
+      - test -f "${DEPLOY_DIR}/appspec.yml" || { echo "not found: ${DEPLOY_DIR}/appspec.yml"; exit 1; }
       - test -f "${DEPLOY_DIR}/taskdef.tmpl.json" || { echo "not found: ${DEPLOY_DIR}/taskdef.tmpl.json"; exit 1; }
   # build（docker buildなど）
   build:
@@ -62,7 +62,7 @@ phases:
       - echo "[done] artifacts in ${DEPLOY_DIR}"
 artifacts:
   files:
-    - deploy/ecs/appspec.yaml
+    - deploy/ecs/appspec.yml
     - deploy/ecs/taskdef.json
     - imageDetail.json
   discard-paths: no
