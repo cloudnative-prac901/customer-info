@@ -12,14 +12,16 @@ phases:
     commands:
       - set -eu
       - ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - REGION="${AWS_DEFAULT_REGION:-ap-northeast-2}"
+      - REGION="${AWS_DEFAULT_REGION}"
       - echo "[pre_build] ACCOUNT_ID=${ACCOUNT_ID} REGION=${REGION}"
       # ECR login
       - aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com"
-      # CloudFormation Outputs からロール/Secret ARN を解決（IamStack/RdsStack で Outputs 済み前提）
-      - EXEC_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "$IAM_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='ECSTaskExecutionRoleArn'].OutputValue" --output text)
-      - TASK_ROLE_ARN=$(aws cloudformation describe-stacks --stack-name "$IAM_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AppTaskRoleArn'].OutputValue" --output text)
-      - APP_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$RDS_STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='AppSecretArn'].OutputValue" --output text)
+
+      # Pipelineから渡される変数でロール/SecretARN を解決
+      - EXEC_ROLE_ARN="${EXEC_ROLE_ARN:-}"
+      - TASK_ROLE_ARN="${TASK_ROLE_ARN:-}"
+      - DB_SECRET_ARN="${DB_SECRET_ARN:-}"
+
       # イメージタグ生成（main 固定ポリシー）
       - TS=$(date +%Y%m%d%H%M%S)
       - IMAGE_TAG="main-${TS}-b${CODEBUILD_BUILD_NUMBER:-0}"
@@ -27,7 +29,7 @@ phases:
       - IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO}:${IMAGE_TAG}"
       - echo "[pre_build] IMAGE_URI=${IMAGE_URI}"
       # 配置ファイルの存在チェック
-      - test -f "${DEPLOY_DIR}/appspec.yml" || { echo "not found:${DEPLOY_DIR}/appspec.yaml"; exit 1; }
+      - test -f "${DEPLOY_DIR}/appspec.yml" || { echo "not found:${DEPLOY_DIR}/appspec.yml"; exit 1; }
       - test -f "${DEPLOY_DIR}/taskdef.tmpl.json" || { echo "not found:${DEPLOY_DIR}/taskdef.tmpl.json"; exit 1; }
   # build（docker buildなど）
   build:
@@ -47,13 +49,21 @@ phases:
       # CodeDeploy(ECS Blue/Green) 用の imageDetail.json（DEPLOY_DIR に出力）
       - printf '[{"name":"IMAGE1_NAME","imageUri":"%s"}]\n' "${IMAGE_URI}" > imageDetail.json
       - echo "imageDetail.json:" && cat imageDetail.json
+
+      # jq/gettext インストール（yum/apt 両対応）
+      - |
+        if command -v yum >/dev/null 2>&1; then
+          sudo yum -y install jq gettext >/dev/null
+        else
+          sudo apt-get update -y >/dev/null
+          sudo apt-get install -y jq gettext-base >/dev/null
+        fi
+
       # taskdef.tmpl.json → taskdef.json（envsubst でプレースホルダ埋め込み）
-      - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION
-      - export DB_SECRET_ARN="${APP_SECRET_ARN}"
-      - command -v envsubst >/dev/null 2>&1 || { echo "installing envsubst"; yum -y install gettext >/dev/null; }
+      - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION DB_SECRET_ARN
       - envsubst < "${DEPLOY_DIR}/taskdef.tmpl.json" > "${DEPLOY_DIR}/taskdef.json"
+
       # DB未導入（CFn Outputs が None/空）の場合は secrets を削除して登録
-      - command -v jq >/dev/null 2>&1 || { echo "installing jq"; yum -y install jq >/dev/null; }
       - |
         if [ -z "${DB_SECRET_ARN}" ] || [ "${DB_SECRET_ARN}" = "None" ]; then
           echo "[post_build] DB_SECRET_ARN is empty => remove secrets from taskdef"
