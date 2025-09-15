@@ -47,7 +47,7 @@ phases:
       - echo "[post_build] push ${IMAGE_URI}"
       - docker push "${IMAGE_URI}"
       # CodeDeploy(ECS Blue/Green) 用の imageDetail.json（DEPLOY_DIR に出力）
-      - printf '[{"name":"IMAGE1_NAME","imageUri":"%s"}]\n' "${IMAGE_URI}" > imageDetail.json
+      - printf '{"ImageURI":"%s"}\n' "${IMAGE_URI}" > imageDetail.json
       - echo "imageDetail.json:" && cat imageDetail.json
 
       # jq/gettext インストール（yum/apt 両対応）
