@@ -75,4 +75,5 @@ artifacts:
     - deploy/ecs/appspec.yml
     - deploy/ecs/taskdef.json
     - imageDetail.json
-  discard-paths: no
+  discard-paths: yes
+  
