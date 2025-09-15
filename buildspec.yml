@@ -64,5 +64,5 @@ artifacts:
   files:
     - deploy/ecs/appspec.yaml
     - deploy/ecs/taskdef.json
-    - deploy/ecs/imageDetail.json
+    - imageDetail.json
   discard-paths: no
