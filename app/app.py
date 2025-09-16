@@ -35,8 +35,14 @@ def get_connection():
         autocommit=True,
     )
 
+# === ヘルスチェック用: DB非依存 ===
 @app.route("/")
 def index():
+    return "<h1>OK</h1><p>Service is up.</p>", 200
+
+# === DB参照 ===
+@app.route("/customers")
+def customers():
     try:
         with get_connection() as conn, conn.cursor() as cur:
             cur.execute("""
@@ -58,12 +64,7 @@ def index():
                 f"<td>{r['email']}</td><td>{r['created_at']}</td></tr>"
             )
         html.append("</table>")
-        return "\n".join(html)
+        return "\n".join(html), 200
 
     except Exception as e:
         return f"<pre>DB接続エラー：{e}</pre>", 500
-
-@app.route("/healthcheck")
-def healthcheck():
-    return "OK", 200
-
