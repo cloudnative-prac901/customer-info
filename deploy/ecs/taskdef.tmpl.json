@@ -20,8 +20,11 @@
           "awslogs-stream-prefix": "customer-info"
         }
       },
+      "environment": [
+        { "name": "DB_HOST", "value": "${DB_HOST}"}
+      ],
       "healthCheck": {
-        "command": ["CMD-SHELL","curl -f http://localhost:80/healthcheck || exit 1"],
+        "command": ["CMD-SHELL","curl -f http://localhost:80/ || exit 1"],
         "interval": 30, "timeout": 5, "retries": 3, "startPeriod": 15
       },
       "secrets": [
