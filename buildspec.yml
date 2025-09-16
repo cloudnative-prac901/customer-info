@@ -21,6 +21,7 @@ phases:
       - EXEC_ROLE_ARN="${EXEC_ROLE_ARN:-}"
       - TASK_ROLE_ARN="${TASK_ROLE_ARN:-}"
       - DB_SECRET_ARN="${DB_SECRET_ARN:-}"
+      - DB_HOST="${DB_HOST:-}"
 
       # イメージタグ生成（main 固定ポリシー）
       - TS=$(date +%Y%m%d%H%M%S)
@@ -60,7 +61,7 @@ phases:
         fi
 
       # taskdef.tmpl.json → taskdef.json（envsubst でプレースホルダ埋め込み）
-      - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION DB_SECRET_ARN
+      - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION DB_SECRET_ARN DB_HOST
       - envsubst < "${DEPLOY_DIR}/taskdef.tmpl.json" > "${DEPLOY_DIR}/taskdef.json"
 
       # DB未導入（CFn Outputs が None/空）の場合は secrets を削除して登録
