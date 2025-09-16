@@ -62,7 +62,7 @@ phases:
       - export EXEC_ROLE_ARN TASK_ROLE_ARN REGION DB_SECRET_ARN DB_HOST
       - envsubst < "${DEPLOY_DIR}/taskdef.tmpl.json" > "${DEPLOY_DIR}/taskdef.json"
 
-      # DB未導入（CFn Outputs が None/空）の場合は secrets を削除して登録
+      # DB未導入の場合は secrets を削除して登録
       - |
         if [ -z "${DB_SECRET_ARN}" ] || [ "${DB_SECRET_ARN}" = "None" ]; then
           echo "[post_build] DB_SECRET_ARN is empty => remove secrets from taskdef"
