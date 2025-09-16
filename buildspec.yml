@@ -2,8 +2,6 @@ version: 0.2
 env:
   variables:
     ECR_REPO: "customer-info/app"           # ECR リポジトリ名
-    IAM_STACK_NAME: "IamStack"              # IamStack の実スタック名
-    RDS_STACK_NAME: "RdsStack"              # RdsStack の実スタック名
     DEPLOY_DIR: "deploy/ecs"                # リポ直下の /deploy/ecs に変更
   git-credential-helper: no
 phases:
