@@ -19,7 +19,7 @@ def load_db_credentials():
 
 # 起動時にキャッシュ
 DB_CREDS = load_db_credentials()   # {"username":"app_user","password":"..."}
-DB_HOST  = os.environ["DB_HOST"]   # 例: customer-info.xxxxxx.ap-northeast-1.rds.amazonaws.com
+DB_HOST  = os.environ.get("DB_HOST")   # 例: customer-info.xxxxxx.ap-northeast-1.rds.amazonaws.com
 DB_NAME  = os.environ.get("DB_NAME", "customer_info")
 
 def get_connection():
