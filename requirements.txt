@@ -2,3 +2,4 @@ Flask
 gunicorn
 pymysql
 boto3
+pytest
