@@ -4,6 +4,10 @@ phases:
     commands:
       - pip install -r requirements.txt
       - pip install pytest
+  pre_build:
+    commands:
+      - export PYTHONPATH="${CODEBUILD_SRC_DIR}/app:${PYTHONPATH}"
+      - python -c "import sys, os; print('[PYTHONPATH]', sys.path[0])"
   build:
     commands:
       - pytest -q --junitxml=test-results/junit.xml
