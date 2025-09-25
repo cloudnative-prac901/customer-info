@@ -1,11 +1,9 @@
 version: 0.2
 phases:
-  install:
+  pre_build:
     commands:
       - pip install -r requirements.txt
       - pip install pytest
-  pre_build:
-    commands:
       - export PYTHONPATH="${CODEBUILD_SRC_DIR}:${CODEBUILD_SRC_DIR}/app:${PYTHONPATH}"
       - export DB_CREDENTIALS_JSON='{"username":"test_user","password":"test_pass","port":3306}'
   build:
