@@ -6,13 +6,12 @@ phases:
       - pip install pytest
   pre_build:
     commands:
-      - export PYTHONPATH="${CODEBUILD_SRC_DIR}/app:${PYTHONPATH}"
-      - python -c "import sys, os; print('[PYTHONPATH]', sys.path[0])"
+      - export PYTHONPATH="${CODEBUILD_SRC_DIR}:${CODEBUILD_SRC_DIR}/app:${PYTHONPATH}"
+      - export DB_CREDENTIALS_JSON='{"username":"test_user","password":"test_pass","port":3306}'
   build:
     commands:
       - pytest -q --junitxml=test-results/junit.xml
 reports:
   pytest_reports:
-    files:
-      - test-results/junit.xml
+    files: [test-results/junit.xml]
     file-format: JUNITXML
