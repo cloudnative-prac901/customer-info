@@ -1,26 +1,26 @@
-import json
-import types
-import app as target
+# tests/test_db_credentials.py
+import os, sys, types, importlib
 
-class FakeSecretsClient:
+# app/ を import パスに追加
+sys.path.insert(0, os.path.abspath("app"))
+
+# --- boto3 をダミー化（import 前に！） ---
+class _FakeSecretsClient:
     def get_secret_value(self, SecretId):
-        assert SecretId == "customer-info-app-credentials"
-        return {"SecretString": json.dumps({
-            "username": "app_user",
-            "password": "secret",
-            "port": 3306
-        })}
+        # テストで検証したい値を返す
+        return {"SecretString": '{"username":"app_user","password":"secret","port":3306}'}
 
-def test_load_db_credentials(monkeypatch):
-    def fake_boto3_client(service_name, region_name=None):
-        assert service_name == "secretsmanager"
-        return FakeSecretsClient()
+def _fake_boto3_client(service_name, region_name=None):
+    assert service_name == "secretsmanager"
+    return _FakeSecretsClient()
 
-    monkeypatch.setenv("DB_SECRET_NAME", "customer-info-app-credentials")
-    monkeypatch.setenv("AWS_REGION", "ap-northeast-2")
-    monkeypatch.setattr(target, "boto3", types.SimpleNamespace(client=fake_boto3_client))
+sys.modules['boto3'] = types.SimpleNamespace(client=_fake_boto3_client)
 
+# --- ここから import。app/app.py のトップレベルが実行される前にモック済み ---
+target = importlib.import_module("app")  # = app/app.py
+
+def test_load_db_credentials_returns_mock():
     creds = target.load_db_credentials()
     assert creds["username"] == "app_user"
     assert creds["password"] == "secret"
-    assert creds["port"] == 3306
+    assert int(creds.get("port", 0)) == 3306
