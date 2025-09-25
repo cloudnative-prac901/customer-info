@@ -1,4 +1,0 @@
-Flask
-gunicorn
-pymysql
-boto3
